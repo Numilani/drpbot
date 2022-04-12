@@ -1,51 +1,65 @@
 ﻿using Discord;
+using Discord.Addons.Hosting;
+using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using NpgsqlTypes;
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.PostgreSQL.ColumnWriters;
 
-public class Program
+IConfigurationRoot config = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json")
+    .AddJsonFile("appsettings.Development.json", optional:true)
+    .Build();
+
+SetupLogging(config.GetConnectionString("DefaultConnection"));
+
+try
 {
-    public static Task Main(string[] args) => new Program().MainAsync();
-
-    public async Task MainAsync()
-    {
-        IConfigurationRoot config = new ConfigurationBuilder()
-            .AddJsonFile("appsettings.json")
-            .AddJsonFile("appsettings.Development.json", optional:true)
-            .Build();
-        
-        SetupLogging(config.GetConnectionString("DefaultConnection"));
-        
-        try
-        {
-            Log.Verbose("Discord RPBot starting...");
-            var BotClient = new DiscordSocketClient();
-            BotClient.Log += SerilogConverter;
-            await BotClient.LoginAsync(TokenType.Bot, config["Discord:BotToken"]);
-            await BotClient.StartAsync();
-
-            await Task.Delay(-1);
-        }
-        catch (Exception ex)
-        {
-            Log.Fatal(ex, "Program failed to start");
-        }
-        finally
-        {
-            Log.CloseAndFlush();
-        }
-    }
+    Log.Information("Starting...");
     
-    // private static ServiceProvider ConfigureServices()
-    // {
+    using IHost host = Host.CreateDefaultBuilder(args)
+        .UseSerilog()
+        .ConfigureDiscordHost((context, cfg) =>
+        {
+            cfg.Token = config["Discord:BotToken"];
+            cfg.SocketConfig = new()
+            {
+                LogLevel = LogSeverity.Verbose,
+                AlwaysDownloadUsers = true,
+                MessageCacheSize = 100
+            };
+        })
+        // .UseCommandService((context, cfg) =>
+        // {
+        //     cfg.DefaultRunMode = RunMode.Async;
+        //     cfg.CaseSensitiveCommands = false;
+        // })
+        .UseInteractionService((context, cfg) =>
+        {
+            cfg.LogLevel = LogSeverity.Info;
+            cfg.UseCompiledLambda = true;
+        })
+        .ConfigureServices((context, services) =>
+        {
         
-    // }
+        })
+        .Build();
+
+    await host.RunAsync();
+}
+catch (Exception e)
+{
+    Log.Fatal("Host terminated unexpectedly: {src} {ex} {msg}", e.Source, e.GetBaseException(), e.Message);
+    throw;
+}
     
-    private static void SetupLogging(string connectionString)
+
+
+static void SetupLogging(string connectionString)
     {
         IDictionary<string, ColumnWriterBase> colwriters = new Dictionary<string, ColumnWriterBase>()
         {
@@ -63,7 +77,7 @@ public class Program
             .CreateLogger();
     }
     
-    private static async Task SerilogConverter(LogMessage msg)
+static async Task SerilogConverter(LogMessage msg)
     {
         var severity = msg.Severity switch
         {
@@ -79,4 +93,3 @@ public class Program
         Log.Write(severity, msg.Exception, "[{Source}] {Message}", msg.Source, msg.Message);
         await Task.CompletedTask;
     }
-}
