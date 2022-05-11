@@ -1,7 +1,11 @@
 ﻿using Discord;
 using Discord.Addons.Hosting;
 using Discord.Commands;
+using Discord.Webhook;
 using Discord.WebSocket;
+using drpbot;
+using drpbot.Data;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -12,7 +16,7 @@ using Serilog.Sinks.PostgreSQL.ColumnWriters;
 
 IConfigurationRoot config = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json")
-    .AddJsonFile("appsettings.Development.json", optional:true)
+    .AddJsonFile("appsettings.Development.json")
     .Build();
 
 SetupLogging(config.GetConnectionString("DefaultConnection"));
@@ -28,16 +32,12 @@ try
             cfg.Token = config["Discord:BotToken"];
             cfg.SocketConfig = new()
             {
+                UseInteractionSnowflakeDate = false,
                 LogLevel = LogSeverity.Verbose,
                 AlwaysDownloadUsers = true,
                 MessageCacheSize = 100
             };
         })
-        // .UseCommandService((context, cfg) =>
-        // {
-        //     cfg.DefaultRunMode = RunMode.Async;
-        //     cfg.CaseSensitiveCommands = false;
-        // })
         .UseInteractionService((context, cfg) =>
         {
             cfg.LogLevel = LogSeverity.Info;
@@ -45,7 +45,11 @@ try
         })
         .ConfigureServices((context, services) =>
         {
-        
+            services.AddHostedService<InteractionHandler>();
+            services.AddDbContext<ApplicationDbContext>(opts =>
+            {
+                opts.UseNpgsql(config.GetConnectionString("DefaultConnection"));
+            });
         })
         .Build();
 
@@ -73,7 +77,7 @@ static void SetupLogging(string connectionString)
             .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
             .Enrich.FromLogContext()
             .WriteTo.Console()
-            .WriteTo.PostgreSQL(connectionString, "logs", colwriters)
+            .WriteTo.PostgreSQL(connectionString, "logs", colwriters, needAutoCreateTable:true, needAutoCreateSchema:true)
             .CreateLogger();
     }
     
