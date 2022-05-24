@@ -89,6 +89,11 @@ public class ImpersonationCommandSet : InteractionModuleBase<SocketInteractionCo
     private static async Task<DiscordWebhookClient> GetChannelWebhook(SocketTextChannel? channel)
     {
         DiscordWebhookClient Webhook;
+        if (channel is SocketThreadChannel)
+        {
+            var x = channel as SocketThreadChannel;
+            channel = x.ParentChannel as SocketTextChannel;
+        }
         if (channel.GetWebhooksAsync().Result.Where(x => x.Name.StartsWith("NPC_")).Count() == 0)
         {
             var x = await channel.CreateWebhookAsync(
