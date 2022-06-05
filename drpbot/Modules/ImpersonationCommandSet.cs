@@ -24,24 +24,24 @@ public class ImpersonationCommandSet : InteractionModuleBase<SocketInteractionCo
     [SlashCommand("sayas", "Speak as an NPC")]
     public async Task SayAs(string npcName, string text)
     {
-        var channel = Context.Channel as SocketTextChannel;
+        var channel = Context.Channel;
         try
         {
-            var Webhook = await GetChannelWebhook(channel);
+            var Webhook = await GetChannelWebhook(channel as SocketTextChannel);
             
             using IServiceScope scope = _provider.CreateScope();
             ApplicationDbContext Db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             if (Db.Impersonations.Where(x => x.name == npcName).Count() > 0)
             {
                 var imgUrl = Db.Impersonations.First(x => x.name == npcName).imgurl;
-                Webhook.SendMessageAsync(text, avatarUrl: imgUrl, username: CultureInfo.CurrentCulture.TextInfo.ToTitleCase(npcName.ToLower()));
+                Webhook.SendMessageAsync(text, avatarUrl: imgUrl, username: CultureInfo.CurrentCulture.TextInfo.ToTitleCase(npcName.ToLower()), threadId: channel is SocketThreadChannel ? channel.Id : null);
             }
             else
             {
-                Webhook.SendMessageAsync(text, username: CultureInfo.CurrentCulture.TextInfo.ToTitleCase(npcName.ToLower()));
+                Webhook.SendMessageAsync(text, username: CultureInfo.CurrentCulture.TextInfo.ToTitleCase(npcName.ToLower()), threadId: channel is SocketThreadChannel ? channel.Id : null);
             }
             
-            await RespondAsync("done");
+            await RespondAsync("done", ephemeral:true);
             await DeleteOriginalResponseAsync();
         }
         catch (Exception ex)
@@ -94,6 +94,7 @@ public class ImpersonationCommandSet : InteractionModuleBase<SocketInteractionCo
             var x = channel as SocketThreadChannel;
             channel = x.ParentChannel as SocketTextChannel;
         }
+
         if (channel.GetWebhooksAsync().Result.Where(x => x.Name.StartsWith("NPC_")).Count() == 0)
         {
             var x = await channel.CreateWebhookAsync(
