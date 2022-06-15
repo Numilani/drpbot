@@ -8,6 +8,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<SavedImpersonation> Impersonations { get; set; }
     public DbSet<PlayerCharacter> Characters { get; set; }
     
+    public DbSet<Item> Items { get; set; }
+    public DbSet<InventoryObject> InWorldItems { get; set; }
+
     // Everything below this line is for "config tables",
     // i.e. things that are really just db-stored option lists.
     // public DbSet<RacialOption> Races { get; set; }

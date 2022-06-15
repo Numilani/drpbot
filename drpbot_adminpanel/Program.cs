@@ -6,20 +6,27 @@ using Microsoft.AspNetCore.Identity.UI;
 using Microsoft.EntityFrameworkCore;
 using drpbot_adminpanel.Areas.Identity;
 using drpbot_adminpanel.Data;
+using drpbot_adminpanel.Objects;
+using Microsoft.AspNetCore.Authentication.OAuth;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(connectionString));
+    options.UseNpgsql(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
-builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
+builder.Services.AddDefaultIdentity<DiscordIdentityUser>(options => options.SignIn.RequireConfirmedAccount = false)
     .AddEntityFrameworkStores<ApplicationDbContext>();
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
-builder.Services
-    .AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<IdentityUser>>();
+builder.Services.AddAuthentication().AddDiscord(opts =>
+{
+    opts.ClientId = builder.Configuration["OAuth:ClientId"];
+    opts.ClientSecret = builder.Configuration["OAuth:ClientSecret"];
+});
+// builder.Services
+    // .AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<IdentityUser>>();
 
 var app = builder.Build();
 
@@ -48,4 +55,6 @@ app.MapControllers();
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
 
+Console.WriteLine(builder.Configuration["OAuth:ClientId"]);
 app.Run();
+

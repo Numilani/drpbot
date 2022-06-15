@@ -5,8 +5,9 @@ public interface ICharacter
     public string Name { get; set; }
     
     public string Description { get; set; }
-    
-    public IEnumerable<IObtainable> Inventory { get; set; }
-    
-    public IDictionary<string, object?> Equipment { get; set; }
+
+    public int BaseHealth { get; set; }
+    public int BaseAttack { get; set; }
+    public int BaseDefense { get; set; }
+    public int BaseSpeed { get; set; }
 }

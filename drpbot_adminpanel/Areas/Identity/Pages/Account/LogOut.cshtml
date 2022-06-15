@@ -1,7 +1,8 @@
 @page
 @using Microsoft.AspNetCore.Identity
+@using drpbot_adminpanel.Objects
 @attribute [IgnoreAntiforgeryToken]
-@inject SignInManager<IdentityUser> SignInManager
+@inject SignInManager<DiscordIdentityUser> SignInManager
 
 @functions {
 

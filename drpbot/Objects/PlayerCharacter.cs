@@ -16,11 +16,29 @@ public class PlayerCharacter: ICharacter
     public string Race { get; set; }
     public string Description { get; set; } = "";
     
-    [NotMapped]
-    public IEnumerable<IObtainable> Inventory { get; set; }
-    [NotMapped]
-    public IDictionary<string, object?> Equipment { get; set; }
-    
+    public int BaseHealth { get; set; } = 100;
+    public int BaseVitality { get; set; } = 100;
+    public int BaseAttack { get; set; } = 1;
+    public int BaseDefense { get; set; } = 1;
+    public int BaseSpeed { get; set; } = 10;
+
+    public int CurrentHealth { get; set; } = 100;
+    public int CurrentVitality { get; set; } = 100;
+
+    public List<EquipmentSlot> UsableEquipmentSlots { get; set; } = new List<EquipmentSlot>()
+    {
+        EquipmentSlot.HEAD,
+        EquipmentSlot.FACE,
+        EquipmentSlot.LEFT_EAR,
+        EquipmentSlot.RIGHT_EAR,
+        EquipmentSlot.NECKLACE,
+        EquipmentSlot.LEFT_HAND_WEARABLE,
+        EquipmentSlot.RIGHT_HAND_WEARABLE,
+        EquipmentSlot.TORSO,
+        EquipmentSlot.LEFT_ARM,
+        EquipmentSlot.RIGHT_ARM
+    };
+
     [Column(TypeName = "integer")]
     public CharacterStatus Status { get; set; }
 
